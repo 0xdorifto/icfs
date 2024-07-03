@@ -1,0 +1,27 @@
+{
+  "canisters": {
+    "icp-nft-storage-backend": {
+      "candid": "src/icp-nft-storage-backend/icp-nft-storage-backend.did",
+      "package": "icp-nft-storage-backend",
+      "type": "rust"
+    },
+    "icp-nft-storage-frontend": {
+      "dependencies": [
+        "icp-nft-storage-backend"
+      ],
+      "source": [
+        "src/icp-nft-storage-frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "icp-nft-storage-frontend"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
