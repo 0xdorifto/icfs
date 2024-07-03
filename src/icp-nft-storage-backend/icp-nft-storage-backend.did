@@ -1,3 +1,12 @@
+type Attribute = record { trait_type : text; value : text };
+type Metadata = record {
+  name : text;
+  description : text;
+  attributes : vec Attribute;
+  image : text;
+};
 service : {
-    "greet": (text) -> (text) query;
-}
+  get_all_metadata : (nat64, nat64) -> (vec record { nat64; Metadata }) query;
+  get_metadata : (nat64) -> (opt Metadata) query;
+  update_metadata : (nat64, Metadata) -> ();
+};
