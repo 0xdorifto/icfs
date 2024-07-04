@@ -1,30 +1,22 @@
-import { icp_nft_storage_backend } from "declarations/collection";
-import { useState } from "react";
+import { Box, Typography } from "@mui/material";
+import { Route, Routes } from "react-router-dom";
+import Collection from "./pages/Collection";
+import Home from "./pages/Home";
+import User from "./pages/User";
 
 function App() {
-  const [greeting, setGreeting] = useState("");
-
-  function handleSubmit(event) {
-    event.preventDefault();
-    const name = event.target.elements.name.value;
-    icp_nft_storage_backend.greet(name).then((greeting) => {
-      setGreeting(greeting);
-    });
-    return false;
-  }
-
   return (
-    <main>
-      <img src="/logo2.svg" alt="DFINITY logo" />
-      <br />
-      <br />
-      <form action="#" onSubmit={handleSubmit}>
-        <label htmlFor="name">Hello: &nbsp;</label>
-        <input id="name" alt="Name" type="text" />
-        <button type="submit">Click Me!</button>
-      </form>
-      <section id="greeting">{greeting}</section>
-    </main>
+    <Box className="">
+      <Typography variant="h2" component="h2">
+        ICP NFT Storage
+      </Typography>
+
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/user" element={<User />} />
+        <Route path="/user/collection" element={<Collection />} />
+      </Routes>
+    </Box>
   );
 }
 
