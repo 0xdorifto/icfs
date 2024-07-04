@@ -1,19 +1,20 @@
 {
   "canisters": {
-    "icp-nft-storage-backend": {
-      "candid": "src/icp-nft-storage-backend/icp-nft-storage-backend.did",
-      "package": "icp-nft-storage-backend",
+    "collection": {
+      "candid": "src/collection/collection.did",
+      "package": "collection",
       "type": "rust"
     },
-    "icp-nft-storage-frontend": {
-      "dependencies": [
-        "icp-nft-storage-backend"
-      ],
-      "source": [
-        "src/icp-nft-storage-frontend/dist"
-      ],
+    "management": {
+      "candid": "src/management/management.did",
+      "package": "management",
+      "type": "rust"
+    },
+    "frontend": {
+      "dependencies": ["collection", "management"],
+      "source": ["src/frontend/dist"],
       "type": "assets",
-      "workspace": "icp-nft-storage-frontend"
+      "workspace": "frontend"
     }
   },
   "defaults": {

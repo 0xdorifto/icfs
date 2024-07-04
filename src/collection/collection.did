@@ -1,0 +1,28 @@
+type Attribute = record { trait_type : text; value : text };
+type CollectionInfo = record {
+  description : text;
+  collection_size : nat64;
+  chain_name : text;
+  standard : text;
+};
+type Metadata = record {
+  name : text;
+  description : text;
+  attributes : vec Attribute;
+  image : text;
+};
+service : {
+  get_all_collection_info : () -> (CollectionInfo) query;
+  get_all_metadata : (nat64, nat64) -> (vec record { nat64; Metadata }) query;
+  get_chain_name : () -> (text) query;
+  get_collection_size : () -> (nat64) query;
+  get_description : () -> (text) query;
+  get_metadata : (nat64) -> (opt Metadata) query;
+  get_standard : () -> (text) query;
+  set_all_collection_info : (CollectionInfo) -> ();
+  set_chain_name : (text) -> ();
+  set_collection_size : (nat64) -> ();
+  set_description : (text) -> ();
+  set_standard : (text) -> ();
+  update_metadata : (nat64, Metadata) -> ();
+}

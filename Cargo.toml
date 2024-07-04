@@ -1,5 +1,3 @@
 [workspace]
-members = [
-    "src/icp-nft-storage-backend"
-]
+members = ["src/collection", "src/management"]
 resolver = "2"

@@ -1,5 +1,5 @@
+import { icp_nft_storage_backend } from "declarations/collection";
 import { useState } from "react";
-import { icp_nft_storage_backend } from "declarations/icp-nft-storage-backend";
 
 function App() {
   const [greeting, setGreeting] = useState("");
