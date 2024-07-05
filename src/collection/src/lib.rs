@@ -1,5 +1,9 @@
 use candid::{CandidType, Deserialize, Principal};
 use ic_cdk;
+use ic_cdk::api::management_canister::main::{
+    CanisterIdRecord, CanisterInstallMode, CanisterSettings, CreateCanisterArgument,
+    InstallCodeArgument,
+};
 use serde::Serialize;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -27,6 +31,7 @@ struct CollectionInfo {
     chain_name: String,
     description: String,
     standard: String,
+    image_canister_id: Principal,
 }
 
 thread_local! {
@@ -38,25 +43,82 @@ thread_local! {
         chain_name: String::new(),
         description: String::new(),
         standard: String::new(),
+        image_canister_id: Principal::anonymous(),
     });
 }
 
-// init
+//init
 #[ic_cdk::init]
-fn init(info: CollectionInfo) {
-    COLLECTION_INFO.with(|ci| *ci.borrow_mut() = info);
+async fn init(info: CollectionInfo) {
+    let image_wasm = include_bytes!("../../image/image.wasm").to_vec();
+
+    // Create the image canister
+    let canister_settings = CanisterSettings {
+        controllers: Some(vec![ic_cdk::id()]),
+        compute_allocation: None,
+        memory_allocation: None,
+        freezing_threshold: None,
+        reserved_cycles_limit: None,
+        log_visibility: None,
+        wasm_memory_limit: None,
+    };
+
+    let create_args = CreateCanisterArgument {
+        settings: Some(canister_settings),
+    };
+
+    let (canister_id,): (CanisterIdRecord,) = match ic_cdk::api::call::call_with_payment(
+        Principal::management_canister(),
+        "create_canister",
+        (create_args,),
+        4_000_000_000_000, // 4 trillion cycles for canister creation
+    )
+    .await
+    {
+        Ok(x) => x,
+        Err((_, err)) => ic_cdk::trap(&format!("Failed to create image canister: {:?}", err)),
+    };
+
+    let image_canister_id = canister_id.canister_id;
+
+    // Install the code on the new canister
+    let install_args = InstallCodeArgument {
+        mode: CanisterInstallMode::Install,
+        canister_id: image_canister_id,
+        wasm_module: image_wasm,
+        arg: vec![], // Empty arg for initialization
+    };
+
+    match ic_cdk::api::call::call(
+        Principal::management_canister(),
+        "install_code",
+        (install_args,),
+    )
+    .await
+    {
+        Ok(()) => (),
+        Err((_, err)) => ic_cdk::trap(&format!("Failed to install image canister code: {:?}", err)),
+    }
+
+    // Update the collection info with the new image canister ID
+    let mut new_info = info;
+    new_info.image_canister_id = image_canister_id;
+
+    COLLECTION_INFO.with(|ci| *ci.borrow_mut() = new_info);
 }
 
 // modifiers
 fn is_owner() -> Result<(), String> {
-    let caller = ic_cdk::caller();
-    COLLECTION_INFO.with(|info| {
-        if info.borrow().owner == caller {
-            Ok(())
-        } else {
-            Err("Only the owner can perform this action".to_string())
-        }
-    })
+    // let caller = ic_cdk::caller();
+    // COLLECTION_INFO.with(|info| {
+    //     if info.borrow().owner == caller {
+    //         Ok(())
+    //     } else {
+    //         Err("Only the owner can perform this action".to_string())
+    //     }
+    // })
+
+    Ok(())
 }
 
 // Collection Info Getters
@@ -88,6 +150,11 @@ fn get_description() -> String {
 #[ic_cdk::query]
 fn get_standard() -> String {
     COLLECTION_INFO.with(|info| info.borrow().standard.clone())
+}
+
+#[ic_cdk::query]
+fn get_image_canister_id() -> Principal {
+    COLLECTION_INFO.with(|info| info.borrow().image_canister_id.clone())
 }
 
 #[ic_cdk::query]
@@ -139,61 +206,88 @@ fn set_standard(std: String) -> Result<(), String> {
 }
 
 #[ic_cdk::update]
+fn set_image_canister_id(id: Principal) -> Result<(), String> {
+    is_owner()?;
+    COLLECTION_INFO.with(|info| info.borrow_mut().image_canister_id = id);
+    Ok(())
+}
+
+#[ic_cdk::update]
 fn set_all_collection_info(info: CollectionInfo) -> Result<(), String> {
     is_owner()?;
     COLLECTION_INFO.with(|ci| *ci.borrow_mut() = info);
     Ok(())
 }
 
-// functions
 #[ic_cdk::query]
 fn get_metadata(token_id: u64) -> Option<Metadata> {
+    println!("hello");
     METADATA_STORE.with(|store| store.borrow().get(&token_id).cloned())
 }
 
 #[ic_cdk::update]
-fn update_metadata(token_id: u64, new_metadata: Metadata) -> Result<(), String> {
+fn update_metadata(token_id: u64, mut new_metadata: Metadata) -> Result<(), String> {
     is_owner()?;
+
+    let image_canister_id = COLLECTION_INFO.with(|info| info.borrow().image_canister_id);
+    new_metadata.image = format!(
+        "http://{}.raw.ic0.app/image/{}",
+        image_canister_id.to_text(),
+        token_id
+    );
+
     METADATA_STORE.with(|store| {
         store.borrow_mut().insert(token_id, new_metadata);
     });
+
     Ok(())
 }
 
 #[ic_cdk::query]
-fn get_all_metadata(start: u64, limit: u64) -> Vec<(u64, Metadata)> {
-    METADATA_STORE.with(|store| {
-        store
-            .borrow()
-            .iter()
-            .skip(start as usize)
-            .take(limit as usize)
-            .map(|(&id, metadata)| (id, metadata.clone()))
-            .collect()
-    })
+fn get_all_metadata() -> Vec<(u64, Option<Metadata>)> {
+    let collection_size = COLLECTION_INFO.with(|info| info.borrow().collection_size);
+    let mut results = Vec::with_capacity(collection_size as usize);
+
+    for token_id in 0..collection_size {
+        let metadata = get_metadata(token_id);
+        results.push((token_id, metadata));
+    }
+
+    results
 }
 
 #[ic_cdk::query]
 fn http_request(request: HttpRequest) -> HttpResponse {
-    let path: Vec<&str> = request.url.split('/').collect();
+    let path: Vec<&str> = request.url.split("/").collect();
+    ic_cdk::println!("Path :{:#?}", path);
 
-    if path.len() == 2 && path[0] == "metadata" {
-        if let Ok(token_id) = path[1].parse::<u64>() {
-            if let Some(metadata) = get_metadata(token_id) {
-                HttpResponse {
-                    status_code: 200,
-                    headers: vec![("Content-Type".to_string(), "application/json".to_string())],
-                    body: serde_json::to_vec(&metadata).unwrap(),
-                }
-            } else {
-                not_found()
-            }
-        } else {
-            bad_request()
-        }
-    } else {
-        not_found()
+    let metadata = get_metadata(0);
+
+    HttpResponse {
+        status_code: 200,
+        headers: vec![("Content-Type".to_string(), "application/json".to_string())],
+        body: serde_json::to_vec(&metadata).unwrap(),
     }
+
+    // let path: Vec<&str> = request.url.split("/").collect();
+    // ic_cdk::println!("Path :{:#?}", path);
+    // if path.len() == 1 {
+    //     if let Ok(token_id) = path[0].parse::<u64>() {
+    //         if let Some(metadata) = get_metadata(token_id) {
+    //             HttpResponse {
+    //                 status_code: 200,
+    //                 headers: vec![("Content-Type".to_string(), "application/json".to_string())],
+    //                 body: serde_json::to_vec(&metadata).unwrap(),
+    //             }
+    //         } else {
+    //             not_found()
+    //         }
+    //     } else {
+    //         bad_request()
+    //     }
+    // } else {
+    //     not_found()
+    // }
 }
 
 #[derive(CandidType, Deserialize)]

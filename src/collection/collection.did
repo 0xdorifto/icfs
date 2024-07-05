@@ -1,28 +1,49 @@
 type Attribute = record { trait_type : text; value : text };
 type CollectionInfo = record {
+  owner : principal;
+  name : text;
   description : text;
   collection_size : nat64;
   chain_name : text;
   standard : text;
 };
+type HttpRequest = record {
+  url : text;
+  method : text;
+  body : blob;
+  headers : vec record { text; text };
+};
+type HttpResponse = record {
+  body : blob;
+  headers : vec record { text; text };
+  status_code : nat16;
+};
 type Metadata = record {
+  external_url : text;
   name : text;
   description : text;
   attributes : vec Attribute;
   image : text;
 };
-service : {
+type Result = variant { Ok; Err : text };
+service : (CollectionInfo) -> {
   get_all_collection_info : () -> (CollectionInfo) query;
-  get_all_metadata : (nat64, nat64) -> (vec record { nat64; Metadata }) query;
+  get_all_metadata : () -> (vec record { nat64; opt Metadata }) query;
   get_chain_name : () -> (text) query;
   get_collection_size : () -> (nat64) query;
   get_description : () -> (text) query;
   get_metadata : (nat64) -> (opt Metadata) query;
+  get_name : () -> (text) query;
+  get_owner : () -> (principal) query;
   get_standard : () -> (text) query;
-  set_all_collection_info : (CollectionInfo) -> ();
-  set_chain_name : (text) -> ();
-  set_collection_size : (nat64) -> ();
-  set_description : (text) -> ();
-  set_standard : (text) -> ();
-  update_metadata : (nat64, Metadata) -> ();
+  hello : () -> (Result) query;
+  http_request : (HttpRequest) -> (HttpResponse) query;
+  set_all_collection_info : (CollectionInfo) -> (Result);
+  set_chain_name : (text) -> (Result);
+  set_collection_size : (nat64) -> (Result);
+  set_description : (text) -> (Result);
+  set_name : (text) -> (Result);
+  set_owner : (principal) -> (Result);
+  set_standard : (text) -> (Result);
+  update_metadata : (nat64, Metadata) -> (Result);
 }

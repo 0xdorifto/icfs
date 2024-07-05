@@ -1,6 +1,6 @@
 use candid::{CandidType, Deserialize, Principal};
 use ic_cdk::api::management_canister::main::{
-    CanisterSettings, CreateCanisterArgument, InstallCodeArgument,
+    create_canister, CanisterSettings, CreateCanisterArgument, InstallCodeArgument,
 };
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -35,12 +35,7 @@ async fn create_collection(init_data: CollectionInitData) -> Result<Principal, S
         }),
     };
 
-    let canister_id = match ic_cdk::api::management_canister::main::create_canister(
-        create_args,
-        1_000_000_000_000,
-    )
-    .await
-    {
+    let canister_id = match create_canister(create_args, 1_000_000_000_000).await {
         Ok((canister_id,)) => canister_id,
         Err((_, err)) => return Err(format!("Failed to create canister: {}", err)),
     };

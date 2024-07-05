@@ -3,15 +3,21 @@
     "collection": {
       "candid": "src/collection/collection.did",
       "package": "collection",
-      "type": "rust"
+      "type": "rust",
+      "init_arg": "(record { owner = principal \"aaaaa-aa\"; name = \"My Collection\"; collection_size = 1000 : nat64; chain_name = \"IC\"; description = \"My NFT Collection\"; standard = \"ERC721\" })"
     },
     "management": {
       "candid": "src/management/management.did",
       "package": "management",
       "type": "rust"
     },
+    "image": {
+      "candid": "src/image/image.did",
+      "package": "image",
+      "type": "rust"
+    },
     "frontend": {
-      "dependencies": ["collection", "management"],
+      "dependencies": ["collection", "management", "image"],
       "source": ["src/frontend/dist"],
       "type": "assets",
       "workspace": "frontend"
