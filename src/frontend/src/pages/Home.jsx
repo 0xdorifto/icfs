@@ -1,37 +1,31 @@
 import { Box, Button } from "@mui/material";
+import { connectToPlug } from "../providers/plugProvider";
+import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import CreateAccountDialog from "../components/CreateAccountDialog";
-import LoginDialog from "../components/LoginDialog";
 
-function Home() {
-  const [openLogin, setOpenLogin] = useState(false);
-  const [openCreateAccount, setOpenCreateAccount] = useState(false);
+function Home({ saveActors }) {
+  const [accountId, setAccountId] = useState("");
 
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
 
-  // const handleLogin = () => {
-  //   navigate("/user");
-  // };
-
-  // const handleCreateAccount = () => {
-  //   navigate("/user");
-  // };
+  const handlePlugButton = async () => {
+    if (!window.ic || !window.ic.plug) {
+      window.open("https://plugwallet.ooo/", "_blank");
+    } else {
+      await connectToPlug(saveActors, setAccountId, accountId);
+      console.log("accountId", accountId);
+      navigate("/" + accountId);
+    }
+  };
 
   return (
     <Box>
-      <Button onClick={() => setOpenLogin(true)} variant="contained">
+      <Button
+        onClick={async () => await handlePlugButton()}
+        variant="contained"
+      >
         Login
       </Button>
-      <Button onClick={() => setOpenCreateAccount(true)} variant="contained">
-        Create Account
-      </Button>
-
-      <LoginDialog open={openLogin} handleClose={() => setOpenLogin(false)} />
-
-      <CreateAccountDialog
-        open={openCreateAccount}
-        handleClose={() => setOpenCreateAccount(false)}
-      />
     </Box>
   );
 }

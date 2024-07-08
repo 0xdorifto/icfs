@@ -3,7 +3,6 @@ type Collection = record {
   name : text;
   description : text;
   collection_size : nat64;
-  image_canister_id : principal;
   chain_name : text;
   standard : text;
 };
@@ -11,4 +10,5 @@ service : {
   add_collection : (text, Collection) -> (text);
   add_user : (text) -> (text);
   list_user_collections : (text) -> (opt vec Collection) query;
+  user_exists : (text) -> (bool) query;
 }

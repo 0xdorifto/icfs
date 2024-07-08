@@ -3,8 +3,7 @@
     "collection": {
       "candid": "src/collection/collection.did",
       "package": "collection",
-      "type": "rust",
-      "init_arg": "(record { owner = principal \"aaaaa-aa\"; name = \"My Collection\"; collection_size = 1000 : nat64; chain_name = \"IC\"; description = \"My NFT Collection\"; standard = \"ERC721\"; image_canister_id = principal \"aaaaa-aa\" })"
+      "type": "rust"
     },
     "management": {
       "candid": "src/management/management.did",
