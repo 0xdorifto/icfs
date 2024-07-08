@@ -229,7 +229,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "image_canister"
+name = "image"
 version = "0.1.0"
 dependencies = [
  "candid",

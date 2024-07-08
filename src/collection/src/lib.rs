@@ -49,7 +49,7 @@ thread_local! {
 
 //init
 #[ic_cdk::init]
-async fn init(info: CollectionInfo) {
+async fn init(info: Option<CollectionInfo>) {
     let image_wasm = include_bytes!("../../image/image.wasm").to_vec();
 
     // Create the image canister
@@ -100,11 +100,10 @@ async fn init(info: CollectionInfo) {
         Err((_, err)) => ic_cdk::trap(&format!("Failed to install image canister code: {:?}", err)),
     }
 
-    // Update the collection info with the new image canister ID
-    let mut new_info = info;
-    new_info.image_canister_id = image_canister_id;
-
-    COLLECTION_INFO.with(|ci| *ci.borrow_mut() = new_info);
+    if let Some(mut collection_info) = info {
+        collection_info.image_canister_id = image_canister_id;
+        COLLECTION_INFO.with(|ci| *ci.borrow_mut() = collection_info);
+    }
 }
 
 // modifiers

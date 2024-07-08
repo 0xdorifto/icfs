@@ -1,0 +1,17 @@
+type HttpRequest = record {
+  url : text;
+  method : text;
+  body : blob;
+  headers : vec record { text; text };
+};
+type HttpResponse = record {
+  body : blob;
+  headers : vec record { text; text };
+  status_code : nat16;
+};
+type Result = variant { Ok; Err : text };
+service : {
+  get_image : (nat64) -> (opt blob) query;
+  http_request : (HttpRequest) -> (HttpResponse) query;
+  store_image : (nat64, blob) -> (Result);
+}
