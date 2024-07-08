@@ -32,11 +32,11 @@ service : (CollectionInfo) -> {
   get_chain_name : () -> (text) query;
   get_collection_size : () -> (nat64) query;
   get_description : () -> (text) query;
+  get_image : (nat64) -> (opt blob) query;
   get_metadata : (nat64) -> (opt Metadata) query;
   get_name : () -> (text) query;
   get_owner : () -> (principal) query;
   get_standard : () -> (text) query;
-  hello : () -> (Result) query;
   http_request : (HttpRequest) -> (HttpResponse) query;
   set_all_collection_info : (CollectionInfo) -> (Result);
   set_chain_name : (text) -> (Result);
@@ -45,5 +45,6 @@ service : (CollectionInfo) -> {
   set_name : (text) -> (Result);
   set_owner : (principal) -> (Result);
   set_standard : (text) -> (Result);
+  store_image : (nat64, blob) -> (Result);
   update_metadata : (nat64, Metadata) -> (Result);
 }

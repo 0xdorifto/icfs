@@ -11,16 +11,11 @@
       "package": "management",
       "type": "rust"
     },
-    "image": {
-      "candid": "src/image/image.did",
-      "package": "image",
-      "type": "rust"
-    },
     "frontend": {
-      "dependencies": ["collection", "management", "image"],
+      "dependencies": ["collection", "management"],
       "source": ["src/frontend/dist"],
       "type": "assets",
-      "workspace": "frontend"
+      "build": "cd src/frontend && npm install && npm run build"
     }
   },
   "defaults": {

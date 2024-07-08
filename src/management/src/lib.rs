@@ -1,71 +1,58 @@
-use candid::{CandidType, Deserialize, Principal};
-use ic_cdk::api::management_canister::main::{
-    create_canister, CanisterSettings, CreateCanisterArgument, InstallCodeArgument,
-};
+use candid::{CandidType, Deserialize};
+use ic_cdk;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-#[derive(CandidType, Deserialize)]
-struct CollectionInitData {
-    owner: Principal,
+#[derive(CandidType, Deserialize, Clone)]
+struct Collection {
+    owner: String,
+    name: String,
     collection_size: u64,
     chain_name: String,
     description: String,
     standard: String,
 }
 
+type UserCollections = HashMap<String, Vec<Collection>>;
+
 thread_local! {
-    static COLLECTIONS: RefCell<HashMap<Principal, Principal>> = RefCell::new(HashMap::new());
+    static USER_COLLECTIONS: RefCell<UserCollections> = RefCell::new(HashMap::new());
 }
 
 #[ic_cdk::update]
-async fn create_collection(init_data: CollectionInitData) -> Result<Principal, String> {
-    let caller = ic_cdk::caller();
-
-    // Create the new canister
-    let create_args = CreateCanisterArgument {
-        settings: Some(CanisterSettings {
-            controllers: Some(vec![ic_cdk::id()]),
-            compute_allocation: None,
-            memory_allocation: None,
-            freezing_threshold: None,
-            reserved_cycles_limit: None,
-            log_visibility: None,
-            wasm_memory_limit: None,
-        }),
-    };
-
-    let canister_id = match create_canister(create_args, 1_000_000_000_000).await {
-        Ok((canister_id,)) => canister_id,
-        Err((_, err)) => return Err(format!("Failed to create canister: {}", err)),
-    };
-
-    // Install the collection canister code
-    let wasm_module =
-        include_bytes!("../../../target/wasm32-unknown-unknown/release/collection.wasm");
-
-    let install_args = InstallCodeArgument {
-        mode: candid::parser::value::Value::Text("install".to_string()),
-        canister_id,
-        wasm_module: wasm_module.to_vec(),
-        arg: candid::encode_one(init_data)
-            .map_err(|e| format!("Failed to encode init args: {}", e))?,
-    };
-
-    match ic_cdk::api::management_canister::main::install_code(install_args).await {
-        Ok(()) => {
-            COLLECTIONS.with(|collections: &RefCell<HashMap<Principal, Principal>>| {
-                collections.borrow_mut().insert(caller, canister_id);
-            });
-            Ok(canister_id)
+fn add_user(user_id: String) -> String {
+    USER_COLLECTIONS.with(|collections| {
+        if collections.borrow().contains_key(&user_id) {
+            format!("User {} already exists", user_id)
+        } else {
+            collections.borrow_mut().insert(user_id.clone(), Vec::new());
+            format!("User {} added successfully", user_id)
         }
-        Err((_, err)) => Err(format!("Failed to install code: {}", err)),
-    }
+    })
+}
+
+#[ic_cdk::update]
+fn add_collection(user_id: String, mut collection: Collection) -> String {
+    USER_COLLECTIONS.with(|collections| {
+        if let Some(user_collections) = collections.borrow_mut().get_mut(&user_id) {
+            collection.owner = user_id.clone();
+            user_collections.push(collection);
+            format!("Collection added successfully for user {}", user_id)
+        } else {
+            format!("User {} not found", user_id)
+        }
+    })
 }
 
 #[ic_cdk::query]
-fn get_user_collection(user: Principal) -> Option<Principal> {
-    COLLECTIONS.with(|collections| collections.borrow().get(&user).cloned())
+fn list_user_collections(user_id: String) -> Option<Vec<Collection>> {
+    USER_COLLECTIONS.with(|collections| collections.borrow().get(&user_id).cloned())
 }
 
+#[ic_cdk::query]
+fn user_exists(user_id: String) -> bool {
+    USER_COLLECTIONS.with(|collections| collections.borrow().contains_key(&user_id))
+}
+
+// Required for Candid interface generation
 ic_cdk::export_candid!();

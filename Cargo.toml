@@ -1,3 +1,3 @@
 [workspace]
-members = ["src/collection", "src/management", "src/image"]
+members = ["src/collection", "src/management"]
 resolver = "2"

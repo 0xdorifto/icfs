@@ -1,5 +1,9 @@
 use candid::{CandidType, Deserialize, Principal};
 use ic_cdk;
+use ic_cdk::api::management_canister::main::{
+    CanisterIdRecord, CanisterInstallMode, CanisterSettings, CreateCanisterArgument,
+    InstallCodeArgument,
+};
 use serde::Serialize;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -27,11 +31,11 @@ struct CollectionInfo {
     chain_name: String,
     description: String,
     standard: String,
+    image_canister_id: Principal,
 }
 
 thread_local! {
     static METADATA_STORE: RefCell<HashMap<u64, Metadata>> = RefCell::new(HashMap::new());
-    static IMAGES: RefCell<HashMap<u64, Vec<u8>>> = RefCell::new(HashMap::new());
     static COLLECTION_INFO: RefCell<CollectionInfo> = RefCell::new(CollectionInfo {
         owner: Principal::anonymous(),
         name: String::new(),
@@ -39,13 +43,67 @@ thread_local! {
         chain_name: String::new(),
         description: String::new(),
         standard: String::new(),
+        image_canister_id: Principal::anonymous(),
     });
 }
 
 //init
 #[ic_cdk::init]
-async fn init(info: CollectionInfo) {
-    COLLECTION_INFO.with(|ci| *ci.borrow_mut() = info);
+async fn init(info: Option<CollectionInfo>) {
+    let image_wasm = include_bytes!("../../image/image.wasm").to_vec();
+
+    // Create the image canister
+    let canister_settings = CanisterSettings {
+        controllers: Some(vec![ic_cdk::id()]),
+        compute_allocation: None,
+        memory_allocation: None,
+        freezing_threshold: None,
+        reserved_cycles_limit: None,
+        log_visibility: None,
+        wasm_memory_limit: None,
+    };
+
+    let create_args = CreateCanisterArgument {
+        settings: Some(canister_settings),
+    };
+
+    let (canister_id,): (CanisterIdRecord,) = match ic_cdk::api::call::call_with_payment(
+        Principal::management_canister(),
+        "create_canister",
+        (create_args,),
+        4_000_000_000_000, // 4 trillion cycles for canister creation
+    )
+    .await
+    {
+        Ok(x) => x,
+        Err((_, err)) => ic_cdk::trap(&format!("Failed to create image canister: {:?}", err)),
+    };
+
+    let image_canister_id = canister_id.canister_id;
+
+    // Install the code on the new canister
+    let install_args = InstallCodeArgument {
+        mode: CanisterInstallMode::Install,
+        canister_id: image_canister_id,
+        wasm_module: image_wasm,
+        arg: vec![], // Empty arg for initialization
+    };
+
+    match ic_cdk::api::call::call(
+        Principal::management_canister(),
+        "install_code",
+        (install_args,),
+    )
+    .await
+    {
+        Ok(()) => (),
+        Err((_, err)) => ic_cdk::trap(&format!("Failed to install image canister code: {:?}", err)),
+    }
+
+    if let Some(mut collection_info) = info {
+        collection_info.image_canister_id = image_canister_id;
+        COLLECTION_INFO.with(|ci| *ci.borrow_mut() = collection_info);
+    }
 }
 
 // modifiers
@@ -91,6 +149,11 @@ fn get_description() -> String {
 #[ic_cdk::query]
 fn get_standard() -> String {
     COLLECTION_INFO.with(|info| info.borrow().standard.clone())
+}
+
+#[ic_cdk::query]
+fn get_image_canister_id() -> Principal {
+    COLLECTION_INFO.with(|info| info.borrow().image_canister_id.clone())
 }
 
 #[ic_cdk::query]
@@ -142,24 +205,17 @@ fn set_standard(std: String) -> Result<(), String> {
 }
 
 #[ic_cdk::update]
+fn set_image_canister_id(id: Principal) -> Result<(), String> {
+    is_owner()?;
+    COLLECTION_INFO.with(|info| info.borrow_mut().image_canister_id = id);
+    Ok(())
+}
+
+#[ic_cdk::update]
 fn set_all_collection_info(info: CollectionInfo) -> Result<(), String> {
     is_owner()?;
     COLLECTION_INFO.with(|ci| *ci.borrow_mut() = info);
     Ok(())
-}
-
-// main functions
-#[ic_cdk::update]
-fn store_image(token_id: u64, image_data: Vec<u8>) -> Result<(), String> {
-    IMAGES.with(|images| {
-        images.borrow_mut().insert(token_id, image_data);
-    });
-    Ok(())
-}
-
-#[ic_cdk::query]
-fn get_image(token_id: u64) -> Option<Vec<u8>> {
-    IMAGES.with(|images| images.borrow().get(&token_id).cloned())
 }
 
 #[ic_cdk::query]
@@ -169,8 +225,15 @@ fn get_metadata(token_id: u64) -> Option<Metadata> {
 }
 
 #[ic_cdk::update]
-fn update_metadata(token_id: u64, new_metadata: Metadata) -> Result<(), String> {
+fn update_metadata(token_id: u64, mut new_metadata: Metadata) -> Result<(), String> {
     is_owner()?;
+
+    let image_canister_id = COLLECTION_INFO.with(|info| info.borrow().image_canister_id);
+    new_metadata.image = format!(
+        "http://{}.raw.ic0.app/image/{}",
+        image_canister_id.to_text(),
+        token_id
+    );
 
     METADATA_STORE.with(|store| {
         store.borrow_mut().insert(token_id, new_metadata);
