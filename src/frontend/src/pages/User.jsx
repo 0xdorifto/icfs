@@ -1,6 +1,5 @@
 import {
   Box,
-  Button,
   Paper,
   Table,
   TableBody,
@@ -15,8 +14,8 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import CreateCollectionDialog from "../components/CreateCollectionDialog";
 
-function createData(name, collectionSize, chain, standard) {
-  return { name, collectionSize, chain, standard };
+function createData(name, collection_size, chain_name, standard) {
+  return { name, collection_size, chain_name, standard };
 }
 
 const rows = [
@@ -39,7 +38,6 @@ function User({ managementActor }) {
           const exists = await managementActor.user_exists(user);
           console.log("exists", exists);
           if (exists) {
-            console.log(await managementActor.list_user_collections(user));
             setCollections(await managementActor.list_user_collections(user));
           } else {
             await managementActor.add_user(user);
@@ -55,16 +53,21 @@ function User({ managementActor }) {
     }
 
     checkUserExists();
-  }, [managementActor, user, collections]);
+  }, [managementActor, user]);
 
-  const handleRowClick = () => {
-    navigate(`/${user}/collection`);
+  const handleRowClick = (name) => {
+    navigate(`/${user}/${name}`);
   };
 
-  const [openOverlay, setOpenOverlay] = useState(false);
-
   if (loading) {
-    return <CircularProgress />;
+    return (
+      <Box>
+        <Typography variant="h4" gutterBottom>
+          Your Collections
+        </Typography>
+        <CircularProgress />
+      </Box>
+    );
   }
 
   return (
@@ -73,10 +76,10 @@ function User({ managementActor }) {
         Your Collections
       </Typography>
 
-      {collections.length === 0 ? (
-        <Typography>You don't have any collections...</Typography>
-      ) : (
-        <Typography>{console.log(collections)}</Typography>
+      {collections.length === 0 && (
+        <Typography>
+          You don't have any collections... If you did, it would look like this:
+        </Typography>
       )}
 
       <TableContainer component={Paper}>
@@ -90,42 +93,51 @@ function User({ managementActor }) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows.map((row) => (
-              <TableRow
-                key={row.name}
-                sx={{
-                  "&:last-child td, &:last-child th": { border: 0 },
-                  "&:hover": {
-                    backgroundColor: "rgba(0, 0, 0, 0.04)",
-                    cursor: "pointer",
-                  },
-                }}
-                onClick={() => handleRowClick()}
-              >
-                <TableCell component="th" scope="row">
-                  {row.name}
-                </TableCell>
-                <TableCell align="right">{row.collectionSize}</TableCell>
-                <TableCell align="right">{row.chain}</TableCell>
-                <TableCell align="right">{row.standard}</TableCell>
-              </TableRow>
-            ))}
+            {collections.length === 0
+              ? rows.map((row) => (
+                  <TableRow
+                    key={row.name}
+                    sx={{
+                      "&:last-child td, &:last-child th": { border: 0 },
+                      "&:hover": {
+                        backgroundColor: "rgba(0, 0, 0, 0.04)",
+                        cursor: "pointer",
+                      },
+                    }}
+                  >
+                    <TableCell component="th" scope="row">
+                      {row.name}
+                    </TableCell>
+                    <TableCell align="right">{row.collection_size}</TableCell>
+                    <TableCell align="right">{row.chain_name}</TableCell>
+                    <TableCell align="right">{row.standard}</TableCell>
+                  </TableRow>
+                ))
+              : collections[0].map((row) => (
+                  <TableRow
+                    key={row.name}
+                    sx={{
+                      "&:last-child td, &:last-child th": { border: 0 },
+                      "&:hover": {
+                        backgroundColor: "rgba(0, 0, 0, 0.04)",
+                        cursor: "pointer",
+                      },
+                    }}
+                    onClick={() => handleRowClick(row.name)}
+                  >
+                    <TableCell component="th" scope="row">
+                      {row.name}
+                    </TableCell>
+                    <TableCell align="right">{row.collection_size}</TableCell>
+                    <TableCell align="right">{row.chain_name}</TableCell>
+                    <TableCell align="right">{row.standard}</TableCell>
+                  </TableRow>
+                ))}
           </TableBody>
         </Table>
       </TableContainer>
 
-      <Button
-        variant="contained"
-        className="m-4"
-        onClick={() => setOpenOverlay(true)}
-      >
-        Create Collection
-      </Button>
-
-      <CreateCollectionDialog
-        open={openOverlay}
-        handleClose={() => setOpenOverlay(false)}
-      />
+      <CreateCollectionDialog managementActor={managementActor} user={user} />
     </Box>
   );
 }

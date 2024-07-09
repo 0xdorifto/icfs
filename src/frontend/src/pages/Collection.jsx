@@ -9,8 +9,9 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import { useState } from "react";
+import { useEffect } from "react";
 import UpdateMetadataDialog from "../components/UpdateMetadataDialog";
+import { useParams } from "react-router-dom";
 
 function createData(index, url) {
   return { index, url };
@@ -23,20 +24,37 @@ const rows = [
 ];
 
 function Collection() {
-  const [openOverlay, setOpenOverlay] = useState(false);
+  const { collection } = useParams();
 
-  const handleRowClick = () => {
-    setOpenOverlay(true);
-  };
+  // useEffect(() => {
+  //   async function checkUserExists() {
+  //     if (managementActor) {
+  //       try {
+  //         setLoading(true);
+  //         const exists = await managementActor.user_exists(user);
+  //         console.log("exists", exists);
+  //         if (exists) {
+  //           setCollections(await managementActor.list_user_collections(user));
+  //         } else {
+  //           await managementActor.add_user(user);
+  //           setCollections([]);
+  //         }
+  //         console.log("collections", collections);
+  //       } catch (error) {
+  //         console.error("Error checking user existence:", error);
+  //       } finally {
+  //         setLoading(false);
+  //       }
+  //     }
+  //   }
 
-  const handleCloseOverlay = () => {
-    setOpenOverlay(false);
-  };
+  //   checkUserExists();
+  // }, [managementActor, user]);
 
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
-        Collection XYZ
+        Collection {collection}
       </Typography>
 
       <Typography>Description bla bla bla</Typography>
@@ -60,7 +78,6 @@ function Collection() {
                     cursor: "pointer",
                   },
                 }}
-                onClick={() => handleRowClick()}
               >
                 <TableCell component="th" scope="row">
                   {row.index}
@@ -71,10 +88,7 @@ function Collection() {
           </TableBody>
         </Table>
       </TableContainer>
-      <UpdateMetadataDialog
-        open={openOverlay}
-        handleClose={handleCloseOverlay}
-      />
+      <UpdateMetadataDialog />
     </Box>
   );
 }

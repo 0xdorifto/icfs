@@ -9,17 +9,16 @@ import Navbar from "./components/Navbar";
 function App() {
   const [accountId, setAccountId] = useState("");
   const [managementActor, setManagementActor] = useState(null);
-  // const [collectionActor, setCollectionActor] = useState(null);
+  const [collectionActor, setCollectionActor] = useState(null);
 
   const navigate = useNavigate();
 
   const saveActors = async (gameActor) => {
     setManagementActor(gameActor);
-    // setCollectionActor(collectionActor);
+    setCollectionActor(collectionActor);
   };
 
   useEffect(() => {
-    console.log;
     navigate(`/${accountId}`);
   }, [accountId]);
 
@@ -31,11 +30,7 @@ function App() {
           <Route
             path="/"
             element={
-              <Home
-                saveActors={saveActors}
-                accountId={accountId}
-                setAccountId={setAccountId}
-              />
+              <Home saveActors={saveActors} setAccountId={setAccountId} />
             }
           />
           <Route
@@ -43,7 +38,7 @@ function App() {
             element={
               <User
                 managementActor={managementActor}
-                // collectionActor={collectionActor}
+                collectionActor={collectionActor}
               />
             }
           />
@@ -52,7 +47,7 @@ function App() {
             element={
               <Collection
                 managementActor={managementActor}
-                // collectionActor={collectionActor}
+                collectionActor={collectionActor}
               />
             }
           />

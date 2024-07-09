@@ -1,8 +1,8 @@
 import { Actor } from "@dfinity/agent";
 import { canisterId as managementCanisterId } from "../../../declarations/management";
-// import { canisterId as collectionCanisterId } from "../../../declarations/collection";
+import { canisterId as collectionCanisterId } from "../../../declarations/collection";
 import { idlFactory as managementIdlFactory } from "../../../declarations/management/management.did.js";
-// import { idlFactory as collectionIdlFactory } from "../../../declarations/collection/collection.did.js";
+import { idlFactory as collectionIdlFactory } from "../../../declarations/collection/collection.did.js";
 
 export const connectToPlug = async (saveActors, setAccountId) => {
   const plug = window.ic.plug;
@@ -25,11 +25,11 @@ export const connectToPlug = async (saveActors, setAccountId) => {
     canisterId: managementCanisterId,
   });
 
-  // const collectionActor = Actor.createActor(collectionIdlFactory, {
-  //   agent: plug.agent,
-  //   canisterId: collectionCanisterId,
-  // });
+  const collectionActor = Actor.createActor(collectionIdlFactory, {
+    agent: plug.agent,
+    canisterId: collectionCanisterId,
+  });
 
   setAccountId(() => plug.accountId);
-  saveActors(managementActor);
+  saveActors(managementActor, collectionActor);
 };
