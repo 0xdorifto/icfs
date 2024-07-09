@@ -11,7 +11,7 @@
       "type": "rust"
     },
     "frontend": {
-      "dependencies": ["collection", "management"],
+      "dependencies": ["management"],
       "source": ["src/frontend/dist"],
       "type": "assets",
       "build": "cd src/frontend && npm install && npm run build"

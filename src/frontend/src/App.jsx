@@ -7,11 +7,11 @@ import { useState } from "react";
 
 function App() {
   const [managementActor, setManagementActor] = useState(null);
-  const [collectionActor, setCollectionActor] = useState(null);
+  // const [collectionActor, setCollectionActor] = useState(null);
 
-  const saveActors = async (gameActor, charActor) => {
+  const saveActors = async (gameActor) => {
     setManagementActor(gameActor);
-    setCollectionActor(charActor);
+    // setCollectionActor(collectionActor);
   };
 
   return (
@@ -27,7 +27,7 @@ function App() {
           element={
             <User
               managementActor={managementActor}
-              collectionActor={collectionActor}
+              // collectionActor={collectionActor}
             />
           }
         />
@@ -36,7 +36,7 @@ function App() {
           element={
             <Collection
               managementActor={managementActor}
-              collectionActor={collectionActor}
+              // collectionActor={collectionActor}
             />
           }
         />

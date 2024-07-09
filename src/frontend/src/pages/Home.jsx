@@ -12,9 +12,8 @@ function Home({ saveActors }) {
     if (!window.ic || !window.ic.plug) {
       window.open("https://plugwallet.ooo/", "_blank");
     } else {
-      await connectToPlug(saveActors, setAccountId, accountId);
-      console.log("accountId", accountId);
-      navigate("/" + accountId);
+      await connectToPlug(saveActors, setAccountId);
+      navigate(`/${accountId}`);
     }
   };
 

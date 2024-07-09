@@ -9,9 +9,10 @@ import {
   TableHead,
   TableRow,
   Typography,
+  CircularProgress,
 } from "@mui/material";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import CreateCollectionDialog from "../components/CreateCollectionDialog";
 
 function createData(name, collectionSize, chain, standard) {
@@ -24,22 +25,40 @@ const rows = [
   createData("Pudgy Penguins", 1000, "Base", "ERC-1155"),
 ];
 
-function User() {
+function User({ managementActor }) {
+  const { user } = useParams();
   const navigate = useNavigate();
+  const [userExists, setUserExists] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function checkUserExists() {
+      if (managementActor) {
+        try {
+          setLoading(true);
+          const exists = await managementActor.user_exists(user);
+          setUserExists(exists);
+        } catch (error) {
+          console.error("Error checking user existence:", error);
+          setUserExists(null);
+        } finally {
+          setLoading(false);
+        }
+      }
+    }
+
+    checkUserExists();
+  }, [managementActor, user]);
 
   const handleRowClick = () => {
-    navigate(`/user/collection`);
+    navigate(`/${user}/collection`);
   };
 
   const [openOverlay, setOpenOverlay] = useState(false);
 
-  const handleButtonClick = () => {
-    setOpenOverlay(true);
-  };
-
-  const handleCloseOverlay = () => {
-    setOpenOverlay(false);
-  };
+  if (loading) {
+    return <CircularProgress />;
+  }
 
   return (
     <Box>
@@ -82,13 +101,17 @@ function User() {
         </Table>
       </TableContainer>
 
-      <Button variant="contained" className="mt-4" onClick={handleButtonClick}>
+      <Button
+        variant="contained"
+        className="mt-4"
+        onClick={() => setOpenOverlay(true)}
+      >
         Create Collection
       </Button>
 
       <CreateCollectionDialog
         open={openOverlay}
-        handleClose={handleCloseOverlay}
+        handleClose={() => setOpenOverlay(false)}
       />
     </Box>
   );
