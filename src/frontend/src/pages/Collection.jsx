@@ -1,5 +1,6 @@
 import {
   Box,
+  CircularProgress,
   Paper,
   Table,
   TableBody,
@@ -9,9 +10,8 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import UpdateMetadataDialog from "../components/UpdateMetadataDialog";
-import { useParams } from "react-router-dom";
 
 function createData(index, url) {
   return { index, url };
@@ -23,41 +23,66 @@ const rows = [
   createData(2, "url2"),
 ];
 
-function Collection() {
-  const { collection } = useParams();
+function Collection({ collectionActor }) {
+  const [loading, setLoading] = useState(false);
+  const [tokens, setTokens] = useState([]);
+  const [collection, setCollection] = useState(null);
 
-  // useEffect(() => {
-  //   async function checkUserExists() {
-  //     if (managementActor) {
-  //       try {
-  //         setLoading(true);
-  //         const exists = await managementActor.user_exists(user);
-  //         console.log("exists", exists);
-  //         if (exists) {
-  //           setCollections(await managementActor.list_user_collections(user));
-  //         } else {
-  //           await managementActor.add_user(user);
-  //           setCollections([]);
-  //         }
-  //         console.log("collections", collections);
-  //       } catch (error) {
-  //         console.error("Error checking user existence:", error);
-  //       } finally {
-  //         setLoading(false);
-  //       }
-  //     }
-  //   }
+  useEffect(() => {
+    async function checkCollectionExists() {
+      if (collectionActor) {
+        try {
+          console.log("collectionActor", collectionActor);
+          setLoading(true);
+          setCollection(await collectionActor.get_all_collection_info());
+          setTokens(await collectionActor.get_all_metadata());
+          console.log("collection", collection);
+          console.log("tokens", tokens);
+        } catch (error) {
+          console.error("Error checking user existence:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    }
 
-  //   checkUserExists();
-  // }, [managementActor, user]);
+    checkCollectionExists();
+  }, [collectionActor]);
+
+  const handleClick = () => {
+    window.open(
+      "https://ipfs.io/ipfs/QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/1166",
+      "_blank",
+      "noopener,noreferrer"
+    );
+  };
+
+  if (loading) {
+    return (
+      <Box>
+        <Typography variant="h4" gutterBottom>
+          Fetching Collection...
+        </Typography>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
-        Collection {collection}
-      </Typography>
+      {/* {collection.name && (
+        <Typography variant="h4" gutterBottom>
+          Collection {collection.name}
+        </Typography>
+      )} */}
 
-      <Typography>Description bla bla bla</Typography>
+      {setTokens.length === 0 && (
+        <Typography>
+          You don't have any tokens... Click the button to create one!
+        </Typography>
+      )}
+
+      {/* <Typography>Description {collection.description}</Typography> */}
 
       <TableContainer component={Paper}>
         <Table sx={{ minWidth: 650 }} aria-label="simple table">
@@ -78,6 +103,25 @@ function Collection() {
                     cursor: "pointer",
                   },
                 }}
+                onClick={() => handleClick()}
+              >
+                <TableCell component="th" scope="row">
+                  {row.index}
+                </TableCell>
+                <TableCell align="right">{row.url}</TableCell>
+              </TableRow>
+            ))}
+            {tokens.map((row) => (
+              <TableRow
+                key={row.name}
+                sx={{
+                  "&:last-child td, &:last-child th": { border: 0 },
+                  "&:hover": {
+                    backgroundColor: "rgba(0, 0, 0, 0.04)",
+                    cursor: "pointer",
+                  },
+                }}
+                onClick={() => handleClick()}
               >
                 <TableCell component="th" scope="row">
                   {row.index}
@@ -88,7 +132,7 @@ function Collection() {
           </TableBody>
         </Table>
       </TableContainer>
-      <UpdateMetadataDialog />
+      <UpdateMetadataDialog collectionActor={collectionActor} />
     </Box>
   );
 }

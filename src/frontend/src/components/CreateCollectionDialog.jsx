@@ -1,13 +1,22 @@
+import {
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  TextField,
+} from "@mui/material";
 import * as React from "react";
-import Button from "@mui/material/Button";
-import TextField from "@mui/material/TextField";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogTitle from "@mui/material/DialogTitle";
 
-export default function CreateCollectionDialog({ managementActor, user }) {
+export default function CreateCollectionDialog({
+  managementActor,
+  user,
+  collections,
+  onCollectionCreated,
+}) {
   const [open, setOpen] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -18,6 +27,7 @@ export default function CreateCollectionDialog({ managementActor, user }) {
   };
 
   const handleSubmit = async (event) => {
+    setLoading(true);
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const formJson = Object.fromEntries(formData.entries());
@@ -25,8 +35,13 @@ export default function CreateCollectionDialog({ managementActor, user }) {
     formJson["collection_size"] = BigInt(formJson["collection_size"]);
     console.log(formJson);
 
-    console.log(await managementActor.add_collection(user, formJson));
+    if (collections.length === 0) await managementActor.add_user(user);
 
+    await managementActor.add_collection(user, formJson);
+
+    onCollectionCreated();
+
+    setLoading(false);
     handleClose();
   };
 
@@ -89,7 +104,10 @@ export default function CreateCollectionDialog({ managementActor, user }) {
           </DialogContent>
           <DialogActions>
             <Button onClick={handleClose}>Cancel</Button>
-            <Button type="submit">Create</Button>
+            <Button type="submit">
+              Create
+              {loading && <CircularProgress color="inherit" className="ml-4" />}
+            </Button>
           </DialogActions>
         </form>
       </Dialog>

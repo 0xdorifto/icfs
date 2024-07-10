@@ -1,8 +1,7 @@
-use candid::{CandidType, Deserialize, Principal};
+use candid::{CandidType, Deserialize};
 use ic_cdk;
 use serde::Serialize;
 use std::cell::RefCell;
-use std::collections::HashMap;
 
 #[derive(CandidType, Deserialize, Serialize, Clone)]
 struct Attribute {
@@ -21,7 +20,7 @@ struct Metadata {
 
 #[derive(CandidType, Deserialize, Clone)]
 struct CollectionInfo {
-    owner: Principal,
+    owner: String,
     name: String,
     collection_size: u64,
     chain_name: String,
@@ -30,10 +29,10 @@ struct CollectionInfo {
 }
 
 thread_local! {
-    static METADATA_STORE: RefCell<HashMap<u64, Metadata>> = RefCell::new(HashMap::new());
-    static IMAGES: RefCell<HashMap<u64, Vec<u8>>> = RefCell::new(HashMap::new());
+    static METADATA_STORE: RefCell<Vec<Metadata>> = RefCell::new(Vec::new());
+    static IMAGES: RefCell<Vec<Vec<u8>>> = RefCell::new(Vec::new());
     static COLLECTION_INFO: RefCell<CollectionInfo> = RefCell::new(CollectionInfo {
-        owner: Principal::anonymous(),
+        owner: String::new(),
         name: String::new(),
         collection_size: 0,
         chain_name: String::new(),
@@ -64,8 +63,8 @@ fn is_owner() -> Result<(), String> {
 
 // Collection Info Getters
 #[ic_cdk::query]
-fn get_owner() -> Principal {
-    COLLECTION_INFO.with(|info| info.borrow().owner)
+fn get_owner() -> String {
+    COLLECTION_INFO.with(|info| info.borrow().owner.clone())
 }
 
 #[ic_cdk::query]
@@ -100,7 +99,7 @@ fn get_all_collection_info() -> CollectionInfo {
 
 // Collection Info Setters
 #[ic_cdk::update]
-fn set_owner(owner: Principal) -> Result<(), String> {
+fn set_owner(owner: String) -> Result<(), String> {
     is_owner()?;
     COLLECTION_INFO.with(|info| info.borrow_mut().owner = owner);
     Ok(())
@@ -150,22 +149,23 @@ fn set_all_collection_info(info: CollectionInfo) -> Result<(), String> {
 
 // main functions
 #[ic_cdk::update]
-fn store_image(token_id: u64, image_data: Vec<u8>) -> Result<(), String> {
+fn store_image(image_data: Vec<u8>) -> Result<u64, String> {
     IMAGES.with(|images| {
-        images.borrow_mut().insert(token_id, image_data);
-    });
-    Ok(())
+        let mut images = images.borrow_mut();
+        let new_token_id = images.len() as u64;
+        images.push(image_data);
+        Ok(new_token_id)
+    })
 }
 
 #[ic_cdk::query]
 fn get_image(token_id: u64) -> Option<Vec<u8>> {
-    IMAGES.with(|images| images.borrow().get(&token_id).cloned())
+    IMAGES.with(|images| images.borrow().get(token_id as usize).cloned())
 }
 
 #[ic_cdk::query]
 fn get_metadata(token_id: u64) -> Option<Metadata> {
-    println!("hello");
-    METADATA_STORE.with(|store| store.borrow().get(&token_id).cloned())
+    METADATA_STORE.with(|store| store.borrow().get(token_id as usize).cloned())
 }
 
 #[ic_cdk::update]
@@ -173,23 +173,37 @@ fn update_metadata(token_id: u64, new_metadata: Metadata) -> Result<(), String> 
     is_owner()?;
 
     METADATA_STORE.with(|store| {
-        store.borrow_mut().insert(token_id, new_metadata);
-    });
-
-    Ok(())
+        let mut store = store.borrow_mut();
+        if token_id as usize >= store.len() {
+            return Err("Token ID out of range".to_string());
+        }
+        store[token_id as usize] = new_metadata;
+        Ok(())
+    })
 }
 
 #[ic_cdk::query]
 fn get_all_metadata() -> Vec<(u64, Option<Metadata>)> {
-    let collection_size = COLLECTION_INFO.with(|info| info.borrow().collection_size);
-    let mut results = Vec::with_capacity(collection_size as usize);
+    METADATA_STORE.with(|store| {
+        store
+            .borrow()
+            .iter()
+            .enumerate()
+            .map(|(index, metadata)| (index as u64, Some(metadata.clone())))
+            .collect()
+    })
+}
 
-    for token_id in 0..collection_size {
-        let metadata = get_metadata(token_id);
-        results.push((token_id, metadata));
-    }
+#[ic_cdk::update]
+fn create_metadata(metadata: Metadata) -> Result<u64, String> {
+    is_owner()?;
 
-    results
+    METADATA_STORE.with(|store| {
+        let mut store = store.borrow_mut();
+        let new_token_id = store.len() as u64;
+        store.push(metadata);
+        Ok(new_token_id)
+    })
 }
 
 #[ic_cdk::query]
@@ -197,33 +211,39 @@ fn http_request(request: HttpRequest) -> HttpResponse {
     let path: Vec<&str> = request.url.split("/").collect();
     ic_cdk::println!("Path :{:#?}", path);
 
-    let metadata = get_metadata(0);
+    // let metadata = get_metadata(0);
 
-    HttpResponse {
-        status_code: 200,
-        headers: vec![("Content-Type".to_string(), "application/json".to_string())],
-        body: serde_json::to_vec(&metadata).unwrap(),
-    }
-
-    // let path: Vec<&str> = request.url.split("/").collect();
-    // ic_cdk::println!("Path :{:#?}", path);
-    // if path.len() == 1 {
-    //     if let Ok(token_id) = path[0].parse::<u64>() {
-    //         if let Some(metadata) = get_metadata(token_id) {
-    //             HttpResponse {
-    //                 status_code: 200,
-    //                 headers: vec![("Content-Type".to_string(), "application/json".to_string())],
-    //                 body: serde_json::to_vec(&metadata).unwrap(),
-    //             }
-    //         } else {
-    //             not_found()
-    //         }
-    //     } else {
-    //         bad_request()
-    //     }
-    // } else {
-    //     not_found()
+    // HttpResponse {
+    //     status_code: 200,
+    //     headers: vec![("Content-Type".to_string(), "application/json".to_string())],
+    //     body: serde_json::to_vec(&metadata).unwrap(),
     // }
+
+    let path: Vec<&str> = request.url.split("/").collect();
+    ic_cdk::println!("Path :{:#?}", path);
+    if path.len() == 2 {
+        if let Ok(token_id) = path[1].parse::<u64>() {
+            if let Some(metadata) = get_metadata(token_id) {
+                HttpResponse {
+                    status_code: 200,
+                    headers: vec![("Content-Type".to_string(), "application/json".to_string())],
+                    body: serde_json::to_vec(&metadata).unwrap(),
+                }
+            } else {
+                not_found()
+            }
+        } else {
+            bad_request()
+        }
+    } else if path.len() == 3 && path[2] == "image" {
+        HttpResponse {
+            status_code: 200,
+            headers: vec![("Content-Type".to_string(), "application/json".to_string())],
+            body: serde_json::to_vec("{}").unwrap(),
+        }
+    } else {
+        not_found()
+    }
 }
 
 #[derive(CandidType, Deserialize)]

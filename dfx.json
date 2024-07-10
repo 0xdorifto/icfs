@@ -3,7 +3,17 @@
     "collection": {
       "candid": "src/collection/collection.did",
       "package": "collection",
-      "type": "rust"
+      "type": "rust",
+      "init_args": [
+        {
+          "owner": "me",
+          "name": "Cool NFT Collection",
+          "collection_size": 1000,
+          "chain_name": "Internet Computer",
+          "description": "A collection of 1000 unique and cool NFTs on the Internet Computer",
+          "standard": "ERC721"
+        }
+      ]
     },
     "management": {
       "candid": "src/management/management.did",
