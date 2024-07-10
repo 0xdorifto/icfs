@@ -47,5 +47,6 @@ service : (CollectionInfo) -> {
   set_owner : (text) -> (Result_1);
   set_standard : (text) -> (Result_1);
   store_image : (blob) -> (Result);
+  update_image : (nat64, blob) -> (Result_1);
   update_metadata : (nat64, Metadata) -> (Result_1);
 }

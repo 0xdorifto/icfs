@@ -7,6 +7,7 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
+base64 = "0.22.1"
 candid = "0.10"
 ic-cdk = "0.15"
 ic-cdk-macros = "0.15"

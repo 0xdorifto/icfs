@@ -1,5 +1,6 @@
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
+import { CircularProgress } from "@mui/material";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -9,11 +10,23 @@ import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
 import * as React from "react";
 
+function base64ToBlob(base64String, contentType = "image/png") {
+  const base64Data = base64String.split(",")[1] || base64String;
+  const binaryString = atob(base64Data);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return new Blob([bytes], { type: contentType });
+}
+
 export default function UpdateMetadataDialog({ collectionActor }) {
   const [open, setOpen] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
   const [attributes, setAttributes] = React.useState([
     { trait_type: "", value: "" },
   ]);
+  const [selectedImage, setSelectedImage] = React.useState(null);
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -22,9 +35,15 @@ export default function UpdateMetadataDialog({ collectionActor }) {
   const handleClose = () => {
     setOpen(false);
     setAttributes([{ trait_type: "", value: "" }]);
+    setSelectedImage(null);
+  };
+
+  const handleImageChange = (event) => {
+    setSelectedImage(event.target.files[0]);
   };
 
   const handleSubmit = async (event) => {
+    setLoading(true);
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const formJson = Object.fromEntries(formData.entries());
@@ -37,14 +56,37 @@ export default function UpdateMetadataDialog({ collectionActor }) {
     const tokenId = BigInt(formJson.tokenId);
     delete formJson.tokenId;
 
-    formJson["image"] = "";
+    // Handle image upload
+    if (selectedImage) {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        formJson["image"] = "";
+        console.log(formJson);
+        console.log("collectionActor", collectionActor);
 
-    console.log("tokenId", tokenId);
-    console.log(formJson);
-    console.log("collectionActor", collectionActor);
-    console.log(await collectionActor.update_metadata(tokenId, formJson));
+        // Convert base64 to Blob
+        const imageBlob = base64ToBlob(reader.result);
 
-    handleClose();
+        // Convert Blob to ArrayBuffer
+        const arrayBuffer = await imageBlob.arrayBuffer();
+
+        // Convert ArrayBuffer to Uint8Array
+        const uint8Array = new Uint8Array(arrayBuffer);
+
+        console.log("image", uint8Array);
+        console.log(await collectionActor.update_image(tokenId, uint8Array));
+        console.log(await collectionActor.update_metadata(tokenId, formJson));
+        handleClose();
+      };
+      reader.readAsDataURL(selectedImage);
+    } else {
+      formJson["image"] = "";
+      console.log(formJson);
+      console.log("collectionActor", collectionActor);
+      console.log(await collectionActor.update_metadata(tokenId, formJson));
+      handleClose();
+    }
+    setLoading(false);
   };
 
   const handleAddAttribute = () => {
@@ -65,10 +107,10 @@ export default function UpdateMetadataDialog({ collectionActor }) {
   return (
     <div>
       <Button variant="outlined" onClick={handleClickOpen}>
-        Update Metadata
+        Edit Metadata
       </Button>
       <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-        <DialogTitle>Update Metadata</DialogTitle>
+        <DialogTitle>Edit Metadata</DialogTitle>
         <form onSubmit={handleSubmit}>
           <DialogContent>
             <TextField
@@ -102,6 +144,20 @@ export default function UpdateMetadataDialog({ collectionActor }) {
               multiline
               rows={3}
             />
+            <Button
+              variant="contained"
+              component="label"
+              style={{ marginTop: "20px", marginBottom: "10px" }}
+            >
+              Upload Image
+              <input
+                type="file"
+                hidden
+                accept="image/*"
+                onChange={handleImageChange}
+              />
+            </Button>
+            {selectedImage && <p>{selectedImage.name}</p>}
             <h4>Attributes</h4>
             {attributes.map((attr, index) => (
               <div
@@ -144,7 +200,9 @@ export default function UpdateMetadataDialog({ collectionActor }) {
           </DialogContent>
           <DialogActions>
             <Button onClick={handleClose}>Cancel</Button>
-            <Button type="submit">Create</Button>
+            <Button type="submit">
+              Edit {loading && <CircularProgress />}
+            </Button>
           </DialogActions>
         </form>
       </Dialog>

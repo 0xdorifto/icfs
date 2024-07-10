@@ -1,3 +1,4 @@
+// use base64::{engine::general_purpose, Engine as _};
 use candid::{CandidType, Deserialize};
 use ic_cdk;
 use serde::Serialize;
@@ -157,10 +158,33 @@ fn store_image(image_data: Vec<u8>) -> Result<u64, String> {
     })
 }
 
+#[ic_cdk::update]
+fn update_image(token_id: u64, image_data: Vec<u8>) -> Result<(), String> {
+    IMAGES.with(|images| {
+        let mut images = images.borrow_mut();
+        if token_id as usize >= images.len() {
+            Err(format!("Token ID {} does not exist", token_id))
+        } else {
+            images[token_id as usize] = image_data;
+            Ok(())
+        }
+    })
+}
+
 #[ic_cdk::query]
 fn get_image(token_id: u64) -> Option<Vec<u8>> {
     IMAGES.with(|images| images.borrow().get(token_id as usize).cloned())
 }
+
+// #[ic_cdk::query]
+// fn get_image(token_id: u64) -> Option<String> {
+//     IMAGES.with(|images| {
+//         images.borrow().get(token_id as usize).map(|image_data| {
+//             let base64 = general_purpose::STANDARD.encode(image_data);
+//             format!("data:image/png;base64,{}", base64)
+//         })
+//     })
+// }
 
 #[ic_cdk::query]
 fn get_metadata(token_id: u64) -> Option<Metadata> {
@@ -168,7 +192,7 @@ fn get_metadata(token_id: u64) -> Option<Metadata> {
 }
 
 #[ic_cdk::update]
-fn update_metadata(token_id: u64, new_metadata: Metadata) -> Result<(), String> {
+fn update_metadata(token_id: u64, mut new_metadata: Metadata) -> Result<(), String> {
     is_owner()?;
 
     METADATA_STORE.with(|store| {
@@ -176,6 +200,9 @@ fn update_metadata(token_id: u64, new_metadata: Metadata) -> Result<(), String> 
         if token_id as usize >= store.len() {
             return Err("Token ID out of range".to_string());
         }
+
+        new_metadata.image = format!("https://{}/{}/image", ic_cdk::api::id().to_text(), token_id);
+
         store[token_id as usize] = new_metadata;
         Ok(())
     })
@@ -231,10 +258,18 @@ fn http_request(request: HttpRequest) -> HttpResponse {
             bad_request()
         }
     } else if path.len() == 3 && path[2] == "image" {
-        HttpResponse {
-            status_code: 200,
-            headers: vec![("Content-Type".to_string(), "application/json".to_string())],
-            body: serde_json::to_vec("{}").unwrap(),
+        if let Ok(token_id) = path[1].parse::<u64>() {
+            if let Some(image) = get_image(token_id) {
+                HttpResponse {
+                    status_code: 200,
+                    headers: vec![("Content-Type".to_string(), "image/png".to_string())],
+                    body: image,
+                }
+            } else {
+                not_found()
+            }
+        } else {
+            bad_request()
         }
     } else {
         not_found()
@@ -271,5 +306,13 @@ fn bad_request() -> HttpResponse {
         body: b"Bad Request".to_vec(),
     }
 }
+
+// fn internal_server_error() -> HttpResponse {
+//     HttpResponse {
+//         status_code: 500,
+//         headers: vec![],
+//         body: "Internal Server Error".as_bytes().to_vec(),
+//     }
+// }
 
 ic_cdk::export_candid!();
