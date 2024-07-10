@@ -2,7 +2,7 @@ import { Box, Button, CircularProgress } from "@mui/material";
 import { useState } from "react";
 import { connectToPlug } from "../providers/plugProvider";
 
-function Home({ saveActors, setAccountId }) {
+function Home({ saveActors, setAccountId, setCollectionPrincipal }) {
   const [loading, setLoading] = useState(false);
 
   const handlePlugButton = async () => {
@@ -10,7 +10,7 @@ function Home({ saveActors, setAccountId }) {
       window.open("https://plugwallet.ooo/", "_blank");
     } else {
       setLoading(true);
-      await connectToPlug(saveActors, setAccountId);
+      await connectToPlug(saveActors, setAccountId, setCollectionPrincipal);
       setLoading(false);
     }
   };

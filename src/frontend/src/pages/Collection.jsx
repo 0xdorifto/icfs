@@ -14,7 +14,7 @@ import { useEffect, useState } from "react";
 import CreateMetadataDialog from "../components/CreateMetadataDialog";
 import UpdateMetadataDialog from "../components/UpdateMetadataDialog";
 
-function Collection({ collectionActor }) {
+function Collection({ collectionActor, collectionPrincipal }) {
   const [loading, setLoading] = useState(false);
   const [collection, setCollection] = useState(null);
   const [size, setSize] = useState(0);
@@ -41,7 +41,7 @@ function Collection({ collectionActor }) {
 
   const handleClick = (index) => {
     window.open(
-      `http://bkyz2-fmaaa-aaaaa-qaaaq-cai.localhost:4943/${index}`,
+      `https://${collectionPrincipal}.raw.icp0.io/${index}`,
       "_blank",
       "noopener,noreferrer"
     );

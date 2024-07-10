@@ -10,6 +10,7 @@ function App() {
   const [accountId, setAccountId] = useState("");
   const [managementActor, setManagementActor] = useState(null);
   const [collectionActor, setCollectionActor] = useState(null);
+  const [collectionPrincipal, setCollectionPrincipal] = useState(null);
   const navigate = useNavigate();
 
   const saveActors = async (managementActor, collectionActor) => {
@@ -29,7 +30,11 @@ function App() {
           <Route
             path="/"
             element={
-              <Home saveActors={saveActors} setAccountId={setAccountId} />
+              <Home
+                saveActors={saveActors}
+                setAccountId={setAccountId}
+                setCollectionPrincipal={setCollectionPrincipal}
+              />
             }
           />
           <Route
@@ -47,6 +52,7 @@ function App() {
               <Collection
                 managementActor={managementActor}
                 collectionActor={collectionActor}
+                collectionPrincipal={collectionPrincipal}
               />
             }
           />
