@@ -1,15 +1,15 @@
-import * as React from "react";
+import AddIcon from "@mui/icons-material/Add";
+import DeleteIcon from "@mui/icons-material/Delete";
 import Button from "@mui/material/Button";
-import TextField from "@mui/material/TextField";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import IconButton from "@mui/material/IconButton";
-import AddIcon from "@mui/icons-material/Add";
-import DeleteIcon from "@mui/icons-material/Delete";
+import TextField from "@mui/material/TextField";
+import * as React from "react";
 
-export default function UpdateMetadataDialog() {
+export default function UpdateMetadataDialog({ collectionActor }) {
   const [open, setOpen] = React.useState(false);
   const [attributes, setAttributes] = React.useState([
     { trait_type: "", value: "" },
@@ -24,7 +24,7 @@ export default function UpdateMetadataDialog() {
     setAttributes([{ trait_type: "", value: "" }]);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const formJson = Object.fromEntries(formData.entries());
@@ -34,7 +34,16 @@ export default function UpdateMetadataDialog() {
       (attr) => attr.trait_type && attr.value
     );
 
+    const tokenId = BigInt(formJson.tokenId);
+    delete formJson.tokenId;
+
+    formJson["image"] = "";
+
+    console.log("tokenId", tokenId);
     console.log(formJson);
+    console.log("collectionActor", collectionActor);
+    console.log(await collectionActor.update_metadata(tokenId, formJson));
+
     handleClose();
   };
 
@@ -56,12 +65,22 @@ export default function UpdateMetadataDialog() {
   return (
     <div>
       <Button variant="outlined" onClick={handleClickOpen}>
-        Create Metadata
+        Update Metadata
       </Button>
       <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-        <DialogTitle>Create Metadata</DialogTitle>
+        <DialogTitle>Update Metadata</DialogTitle>
         <form onSubmit={handleSubmit}>
           <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              id="tokenId"
+              name="tokenId"
+              label="Token ID"
+              type="text"
+              fullWidth
+              variant="standard"
+            />
             <TextField
               autoFocus
               margin="dense"
@@ -82,24 +101,6 @@ export default function UpdateMetadataDialog() {
               variant="standard"
               multiline
               rows={3}
-            />
-            <TextField
-              margin="dense"
-              id="image"
-              name="image"
-              label="Image URL"
-              type="url"
-              fullWidth
-              variant="standard"
-            />
-            <TextField
-              margin="dense"
-              id="external_url"
-              name="external_url"
-              label="External URL"
-              type="url"
-              fullWidth
-              variant="standard"
             />
             <h4>Attributes</h4>
             {attributes.map((attr, index) => (

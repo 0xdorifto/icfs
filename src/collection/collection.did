@@ -19,7 +19,6 @@ type HttpResponse = record {
   status_code : nat16;
 };
 type Metadata = record {
-  external_url : text;
   name : text;
   description : text;
   attributes : vec Attribute;

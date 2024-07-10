@@ -15,7 +15,6 @@ struct Metadata {
     description: String,
     image: String,
     attributes: Vec<Attribute>,
-    external_url: String,
 }
 
 #[derive(CandidType, Deserialize, Clone)]
@@ -195,12 +194,19 @@ fn get_all_metadata() -> Vec<(u64, Option<Metadata>)> {
 }
 
 #[ic_cdk::update]
-fn create_metadata(metadata: Metadata) -> Result<u64, String> {
+fn create_metadata(mut metadata: Metadata) -> Result<u64, String> {
     is_owner()?;
 
     METADATA_STORE.with(|store| {
         let mut store = store.borrow_mut();
         let new_token_id = store.len() as u64;
+
+        metadata.image = format!(
+            "https://{}/{}/image",
+            ic_cdk::api::id().to_text(),
+            new_token_id
+        );
+
         store.push(metadata);
         Ok(new_token_id)
     })
@@ -208,17 +214,6 @@ fn create_metadata(metadata: Metadata) -> Result<u64, String> {
 
 #[ic_cdk::query]
 fn http_request(request: HttpRequest) -> HttpResponse {
-    let path: Vec<&str> = request.url.split("/").collect();
-    ic_cdk::println!("Path :{:#?}", path);
-
-    // let metadata = get_metadata(0);
-
-    // HttpResponse {
-    //     status_code: 200,
-    //     headers: vec![("Content-Type".to_string(), "application/json".to_string())],
-    //     body: serde_json::to_vec(&metadata).unwrap(),
-    // }
-
     let path: Vec<&str> = request.url.split("/").collect();
     ic_cdk::println!("Path :{:#?}", path);
     if path.len() == 2 {

@@ -24,7 +24,7 @@ export default function CreateMetadataDialog({ collectionActor }) {
     setAttributes([{ trait_type: "", value: "" }]);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const formJson = Object.fromEntries(formData.entries());
@@ -34,9 +34,11 @@ export default function CreateMetadataDialog({ collectionActor }) {
       (attr) => attr.trait_type && attr.value
     );
 
-    console.log(formJson);
+    formJson["image"] = "";
 
-    // await collectionActor.
+    console.log(formJson);
+    console.log("collectionActor", collectionActor);
+    console.log(await collectionActor.create_metadata(formJson));
 
     handleClose();
   };
@@ -85,24 +87,6 @@ export default function CreateMetadataDialog({ collectionActor }) {
               variant="standard"
               multiline
               rows={3}
-            />
-            <TextField
-              margin="dense"
-              id="image"
-              name="image"
-              label="Image URL"
-              type="url"
-              fullWidth
-              variant="standard"
-            />
-            <TextField
-              margin="dense"
-              id="external_url"
-              name="external_url"
-              label="External URL"
-              type="url"
-              fullWidth
-              variant="standard"
             />
             <h4>Attributes</h4>
             {attributes.map((attr, index) => (

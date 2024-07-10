@@ -20,7 +20,6 @@ struct Metadata {
     description: String,
     image: String,
     attributes: Vec<Attribute>,
-    external_url: String,
 }
 
 #[derive(CandidType, Deserialize, Clone)]

@@ -11,22 +11,13 @@ import {
   Typography,
 } from "@mui/material";
 import { useEffect, useState } from "react";
+import CreateMetadataDialog from "../components/CreateMetadataDialog";
 import UpdateMetadataDialog from "../components/UpdateMetadataDialog";
-
-function createData(index, url) {
-  return { index, url };
-}
-
-const rows = [
-  createData(0, "url0"),
-  createData(1, "url1"),
-  createData(2, "url2"),
-];
 
 function Collection({ collectionActor }) {
   const [loading, setLoading] = useState(false);
-  const [tokens, setTokens] = useState([]);
   const [collection, setCollection] = useState(null);
+  const [size, setSize] = useState(0);
 
   useEffect(() => {
     async function checkCollectionExists() {
@@ -34,10 +25,9 @@ function Collection({ collectionActor }) {
         try {
           console.log("collectionActor", collectionActor);
           setLoading(true);
+          setSize(await collectionActor.get_collection_size());
           setCollection(await collectionActor.get_all_collection_info());
-          setTokens(await collectionActor.get_all_metadata());
           console.log("collection", collection);
-          console.log("tokens", tokens);
         } catch (error) {
           console.error("Error checking user existence:", error);
         } finally {
@@ -49,9 +39,9 @@ function Collection({ collectionActor }) {
     checkCollectionExists();
   }, [collectionActor]);
 
-  const handleClick = () => {
+  const handleClick = (index) => {
     window.open(
-      "https://ipfs.io/ipfs/QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/1166",
+      `http://bkyz2-fmaaa-aaaaa-qaaaq-cai.localhost:4943/${index}`,
       "_blank",
       "noopener,noreferrer"
     );
@@ -76,12 +66,6 @@ function Collection({ collectionActor }) {
         </Typography>
       )} */}
 
-      {setTokens.length === 0 && (
-        <Typography>
-          You don't have any tokens... Click the button to create one!
-        </Typography>
-      )}
-
       {/* <Typography>Description {collection.description}</Typography> */}
 
       <TableContainer component={Paper}>
@@ -89,13 +73,12 @@ function Collection({ collectionActor }) {
           <TableHead>
             <TableRow>
               <TableCell>Index</TableCell>
-              <TableCell align="right">URL</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows.map((row) => (
+            {[...Array(10)].map((_, index) => (
               <TableRow
-                key={row.name}
+                key={index}
                 sx={{
                   "&:last-child td, &:last-child th": { border: 0 },
                   "&:hover": {
@@ -103,36 +86,18 @@ function Collection({ collectionActor }) {
                     cursor: "pointer",
                   },
                 }}
-                onClick={() => handleClick()}
+                onClick={() => handleClick(index)}
               >
                 <TableCell component="th" scope="row">
-                  {row.index}
+                  {index}
                 </TableCell>
-                <TableCell align="right">{row.url}</TableCell>
-              </TableRow>
-            ))}
-            {tokens.map((row) => (
-              <TableRow
-                key={row.name}
-                sx={{
-                  "&:last-child td, &:last-child th": { border: 0 },
-                  "&:hover": {
-                    backgroundColor: "rgba(0, 0, 0, 0.04)",
-                    cursor: "pointer",
-                  },
-                }}
-                onClick={() => handleClick()}
-              >
-                <TableCell component="th" scope="row">
-                  {row.index}
-                </TableCell>
-                <TableCell align="right">{row.url}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
       <UpdateMetadataDialog collectionActor={collectionActor} />
+      <CreateMetadataDialog collectionActor={collectionActor} />
     </Box>
   );
 }
