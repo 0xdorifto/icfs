@@ -1,25 +1,25 @@
-# `icp-nft-storage`
+# ICFS: Decentralized Asset Management for Dynamic NFTs
 
-Welcome to your new `icp-nft-storage` project and to the Internet Computer development community. By default, creating a new project adds this README and some template files to your project directory. You can edit these template files to customize your project and to include your own code to speed up the development cycle.
+ICFS (Internet Computer File System) is a user-friendly, decentralized platform designed for dynamic NFT creators to securely host and manage their collection metadata. The platform aims to function similarly to Filebase (https://filebase.com/), providing each user with a personalized dashboard where they can easily view, edit, and manage their collections. Within each collection, users have the ability to update individual tokens. The long-term vision is to evolve ICFS into a comprehensive file system within the Internet Computer ecosystem.
 
-To get started, you might want to explore the project directory structure and the default configuration file. Working with this project in your development environment will not affect any production deployment or identity tokens.
+### Architecture Overview
+The ICFS platform is built on a robust architecture consisting of two types of canisters: a management canister and multiple collection canisters. 
 
-To learn more before you start working with `icp-nft-storage`, see the following documentation available online:
+- **Management Canister:** This canister serves as the central hub, maintaining a mapping of all registered users (owners) to their respective collections. It also has the capability to create new collection canisters, which are then linked to the user's account.
 
-- [Quick Start](https://internetcomputer.org/docs/current/developer-docs/setup/deploy-locally)
-- [SDK Developer Tools](https://internetcomputer.org/docs/current/developer-docs/setup/install)
-- [Rust Canister Development Guide](https://internetcomputer.org/docs/current/developer-docs/backend/rust/)
-- [ic-cdk](https://docs.rs/ic-cdk)
-- [ic-cdk-macros](https://docs.rs/ic-cdk-macros)
-- [Candid Introduction](https://internetcomputer.org/docs/current/developer-docs/backend/candid/)
+- **Collection Canisters:** Each collection is stored within its own dedicated canister, which houses key details such as the collection's name, the blockchain it resides on, the number of tokens, and a list of metadata for each token. Only the collection owner has the authority to edit these details.
 
-If you want to start working on your project right away, you might want to try the following commands:
+### Business Model
+ICFS plans to adopt a freemium business model, offering users access to basic features for free, while premium tiers will provide expanded storage and advanced functionalities.
 
-```bash
-cd icp-nft-storage/
-dfx help
-dfx canister --help
-```
+### Key Features
+- **Enhanced User Interface:** A redesigned interface will offer a more intuitive and enjoyable user experience.
+- **Mass Metadata Uploads:** Users will be able to upload and update metadata for entire collections in bulk.
+- **Flexible Metadata Management:** Support for multiple metadata files per token, allowing easy swaps based on the owner’s preferences.
+- **Automated Metadata Updates:** An automation service that updates metadata dynamically based on external conditions.
+- **Versatile Authentication:** Allow users to log in with email and o-auth for easier accessibility.
+
+ICFS is committed to empowering creators with the tools they need to manage dynamic NFTs efficiently and securely, all within a decentralized framework.
 
 ## Running the project locally
 
